@@ -66,6 +66,25 @@ void Parser::parse_loop()
 	this->reset();
 }
 
+void Parser::parse_ithc(size_t size)
+{
+	struct ithc_api_header {
+		uint8_t hdr_size;
+		uint8_t reserved[3];
+		uint32_t msg_num;
+		uint32_t size;
+	} hdr;
+
+	this->index = 0;
+	while (this->index < size) {
+		hdr = this->read<struct ithc_api_header>();
+		this->skip(hdr.hdr_size - sizeof hdr);
+		size_t end = this->index + hdr.size;
+		this->parse(false);
+		this->index = end;
+	}
+}
+
 void Parser::parse_payload()
 {
 	const auto payload = this->read<struct ipts_payload>();

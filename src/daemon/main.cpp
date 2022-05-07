@@ -22,6 +22,8 @@
 #include <fmt/format.h>
 #include <functional>
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <thread>
@@ -30,13 +32,13 @@ using namespace std::chrono;
 
 namespace iptsd::daemon {
 
-static bool iptsd_loop(Context &ctx)
+static bool iptsd_loop(Context &ctx, ipts::Control &control)
 {
-	u32 doorbell = ctx.control.doorbell();
-	u32 diff = doorbell - ctx.control.current_doorbell;
+	u32 doorbell = control.doorbell();
+	u32 diff = doorbell - control.current_doorbell;
 
-	while (doorbell > ctx.control.current_doorbell) {
-		ctx.control.read(ctx.parser.buffer());
+	while (doorbell > control.current_doorbell) {
+		control.read(ctx.parser.buffer());
 
 		try {
 			ctx.parser.parse();
@@ -44,15 +46,14 @@ static bool iptsd_loop(Context &ctx)
 			spdlog::error(e.what());
 		}
 
-		ctx.control.send_feedback();
+		control.send_feedback();
 	}
 
 	return diff > 0;
 }
 
-static int main()
+static int main_ipts()
 {
-	Context ctx {};
 
 	std::atomic_bool should_exit {false};
 	std::atomic_bool should_reset {false};
@@ -61,7 +62,9 @@ static int main()
 	auto const _sigterm = common::signal<SIGTERM>([&](int) { should_exit = true; });
 	auto const _sigint = common::signal<SIGINT>([&](int) { should_exit = true; });
 
-	struct ipts_device_info info = ctx.control.info;
+	ipts::Control control;
+	struct ipts_device_info info = control.info;
+	Context ctx(info);
 	system_clock::time_point timeout = system_clock::now() + 5s;
 
 	spdlog::info("Connected to device {:04X}:{:04X}", info.vendor, info.product);
@@ -71,7 +74,7 @@ static int main()
 	ctx.parser.on_heatmap = [&](const auto &data) { iptsd_touch_input(ctx, data); };
 
 	while (true) {
-		if (iptsd_loop(ctx))
+		if (iptsd_loop(ctx, control))
 			timeout = system_clock::now() + 5s;
 
 		std::this_thread::sleep_for(timeout > system_clock::now() ? 10ms : 200ms);
@@ -79,7 +82,7 @@ static int main()
 		if (should_reset) {
 			spdlog::info("Resetting touch sensor");
 
-			ctx.control.reset();
+			control.reset();
 			should_reset = false;
 		}
 
@@ -93,6 +96,42 @@ static int main()
 	return 0;
 }
 
+#define ITHC_DEV "/dev/ithc"
+#define ITHC_SYSFS "/sys/class/misc/ithc/device/ithc/"
+
+static int main_ithc()
+{
+	struct ipts_device_info info = { 0 };
+	std::ifstream(ITHC_SYSFS "vendor") >> std::setbase(0) >> info.vendor;
+	std::ifstream(ITHC_SYSFS "product") >> std::setbase(0) >> info.product;
+	spdlog::info("Vendor/product: {:04X}:{:04X}", info.vendor, info.product);
+	info.buffer_size = 0x10000;
+	info.max_contacts = 10;
+	Context ctx(info);
+	ctx.parser.on_singletouch = [&](const auto &data) { iptsd_singletouch_input(ctx, data); };
+	ctx.parser.on_stylus = [&](const auto &data) { iptsd_stylus_input(ctx, data); };
+	ctx.parser.on_heatmap = [&](const auto &data) { iptsd_touch_input(ctx, data); };
+
+	int fd = common::open(ITHC_DEV, O_RDONLY);
+	if (fd < 0) throw common::cerror("Failed to open " ITHC_DEV);
+	lseek(fd, 0, SEEK_END);
+	spdlog::info("Opened " ITHC_DEV);
+
+	while (true) {
+		ssize_t r = common::read(fd, ctx.parser.buffer());
+		if (r < 0 && errno == EINTR) break;
+		if (r < 0) throw common::cerror("Failed to read from buffer");
+
+		try {
+			ctx.parser.parse_ithc(r);
+		} catch (std::out_of_range &e) {
+			spdlog::error(e.what());
+		}
+	}
+
+	return 0;
+}
+
 } // namespace iptsd::daemon
 
 int main()
@@ -100,7 +139,8 @@ int main()
 	spdlog::set_pattern("[%X.%e] [%^%l%$] %v");
 
 	try {
-		return iptsd::daemon::main();
+		if (!access(ITHC_DEV, F_OK)) return iptsd::daemon::main_ithc();
+		return iptsd::daemon::main_ipts();
 	} catch (std::exception &e) {
 		spdlog::error(e.what());
 		return EXIT_FAILURE;

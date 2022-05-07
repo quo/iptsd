@@ -96,6 +96,7 @@ public:
 	const gsl::span<u8> buffer();
 	void parse(bool reset = true);
 	void parse_loop();
+	void parse_ithc(size_t len);
 };
 
 inline const gsl::span<u8> Parser::buffer()
