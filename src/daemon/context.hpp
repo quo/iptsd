@@ -16,13 +16,12 @@ namespace iptsd::daemon {
 class Context {
 public:
 	struct ipts_device_info info;
-	ipts::Parser parser;
-
 	Config config;
+	ipts::Parser parser;
 	DeviceManager devices;
 
 	Context(struct ipts_device_info info)
-		: info(info), parser(info.buffer_size), config(info),
+		: info(info), config(info), parser(info.buffer_size, config.invert_x, config.invert_y),
 		  devices(config) {};
 };
 

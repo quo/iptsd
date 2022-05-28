@@ -40,9 +40,8 @@ public:
 
 class Heatmap {
 public:
-	u8 width;
-	u8 height;
-	u16 size;
+	u8 width = 0;
+	u8 height = 0;
 
 	u8 y_min = 0;
 	u8 y_max = 0;
@@ -50,51 +49,65 @@ public:
 	u8 x_max = 0;
 	u8 z_min = 0;
 	u8 z_max = 0;
-	u16 count = 0;
 	u32 timestamp = 0;
 
-	std::vector<u8> data;
+	gsl::span<u8> data;
+};
 
-	Heatmap(u8 w, u8 h) : width(w), height(h), size(w * h), data(size) {};
-	Heatmap(u16 size) : width(0), height(0), size(size), data(size) {};
+class Block {
+private:
+	std::vector<u8> &data;
+	size_t index, end;
+
+public:
+	Block(std::vector<u8> &data, size_t index, size_t end) : data(data), index(index), end(end) {};
+	template <class T> const T& read();
+	void skip(const size_t size);
+	size_t remaining();
+	Block block(size_t size);
+	gsl::span<u8> span();
 };
 
 class Parser {
 private:
 	std::vector<u8> data;
-	size_t index = 0;
+	bool invert_x, invert_y;
 
-	std::unique_ptr<Heatmap> heatmap;
+	Heatmap heatmap;
+	StylusData stylus;
+	int stylus_real = 0, stylus_imag = 0;
+	int num_cols = 0, num_rows = 0;
 
-	void read(const gsl::span<u8> dest);
-	void skip(const size_t size);
-	void reset();
+	Block block();
 
-	template <class T> T read();
+	void parse(Block&, bool);
+	void parse_payload(Block&);
+	void parse_hid(Block&);
 
-	void parse_payload();
-	void parse_hid(const struct ipts_data &header);
+	void parse_singletouch(Block&);
+	void parse_hid_container(Block&);
+	void parse_container_reports(Block&);
+	void parse_heatmap_data(Block&);
 
-	void parse_singletouch();
-	void parse_hid_heatmap(const struct ipts_data &header);
-	void parse_hid_heatmap_data();
+	void parse_stylus(Block&);
+	void parse_stylus_report_v1(Block&);
+	void parse_stylus_report_v2(Block&);
 
-	void parse_stylus(const struct ipts_payload_frame &frame);
-	void parse_stylus_report(const struct ipts_report &report);
-
-	void parse_heatmap(const struct ipts_payload_frame &frame);
-	void parse_heatmap_data(const struct ipts_heatmap_dim &dim,
-				const struct ipts_heatmap_timestamp &time);
+	void parse_dft(Block&);
+	void process_dft(const struct ipts_pen_dft_window &dft,
+		const struct ipts_pen_dft_window_row **dft_x,
+		const struct ipts_pen_dft_window_row **dft_y);
+	void stop_stylus();
 
 public:
 	std::function<void(const SingletouchData &)> on_singletouch;
 	std::function<void(const StylusData &)> on_stylus;
 	std::function<void(const Heatmap &)> on_heatmap;
 
-	Parser(size_t size) : data(size) {};
+	Parser(size_t size, bool invert_x, bool invert_y) : data(size), invert_x(invert_x), invert_y(invert_y) {};
 
 	const gsl::span<u8> buffer();
-	void parse(bool reset = true);
+	void parse();
 	void parse_loop();
 	void parse_ithc(size_t len);
 };
@@ -102,17 +115,6 @@ public:
 inline const gsl::span<u8> Parser::buffer()
 {
 	return gsl::span(this->data);
-}
-
-template <class T> inline T Parser::read()
-{
-	T value {};
-
-	// We have to break type safety here, since all we have is a bytestream.
-	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-	this->read(gsl::span(reinterpret_cast<u8 *>(&value), sizeof(value)));
-
-	return value;
 }
 
 } /* namespace iptsd::ipts */

@@ -1,6 +1,7 @@
 sources = [
 	'control.cpp',
 	'parser.cpp',
+	'dft.cpp',
 ]
 
 deps = [
