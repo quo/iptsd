@@ -1,3 +1,13 @@
+# :warning: Experimental iptsd fork :warning:
+
+This is a fork of the libqzed branch of iptsd, with the following changes:
+- Added support for SP7+ (requires [ithc driver](https://github.com/quo/ithc-linux)).
+- Added support for Surface Pen on SP7/SP7+.
+
+These changes are still experimental. Please report any issues you encounter.
+
+---
+
 # Intel Precise Touch & Stylus
 
 This is the userspace part of IPTS (Intel Precise Touch & Stylus) for Linux.
@@ -18,34 +28,10 @@ parse the data, and generate input events using uinput devices. The reason for
 doing this in userspace is that parsing the data requires floating points,
 which are not allowed in the kernel.
 
-### What is working?
- * MS Surface Gen 4-6:
-   * Stylus Input
-   * Multitouch Finger Input
-   * Contact area calculation
- * MS Surface Gen 7:
-   * Singletouch Finger Input
- * HP Spectre 13 x2 (only non-surface device to use IPTS)
-   * Entirely untested
-
-### What doesn't work?
- * MS Surface Gen 7:
-   * Multitouch Input
-   * Stylus Input
- * HP Spectre 13 x2
-   * Entirely untested
-
 **NOTE:** The multitouch code has not been tested on all devices. It is
 very likely that it will still need adjustments to run correctly on some
 devices. If you have a device with IPTS and want to test it, feel free to
 open an issue or join ##linux-surface on Freenode IRC and get in touch.
-
-Tested Devices:
- * Surface Book 1
- * Surface Book 2 (13" and 15")
- * Surface Pro 4 (`1B96:006A` variant)
- * Surface Pro 5
- * Surface Pro 6
 
 ### Building
 You need to install git, a c compiler, meson, ninja through your
