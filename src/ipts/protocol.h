@@ -157,14 +157,14 @@ struct ipts_pen_magnitude_data {
 };
 
 struct ipts_pen_dft_window {
-    uint32_t timestamp; // counting at approx 8MHz
-    uint8_t num_rows;
-    uint8_t seq_num;
-    uint8_t unknown1;   // usually 1, can be 0 if there are simultaneous touch events
-    uint8_t unknown2;   // usually 1, can be 0 if there are simultaneous touch events
-    uint8_t unknown3;   // usually 1, but can be higher (2,3,4) for the first few packets of a pen interaction
-    uint8_t data_type;
-    uint16_t unknown4;  // always 0xffff (padding?)
+	uint32_t timestamp; // counting at approx 8MHz
+	uint8_t num_rows;
+	uint8_t seq_num;
+	uint8_t unknown1;   // usually 1, can be 0 if there are simultaneous touch events
+	uint8_t unknown2;   // usually 1, can be 0 if there are simultaneous touch events
+	uint8_t unknown3;   // usually 1, but can be higher (2,3,4) for the first few packets of a pen interaction
+	uint8_t data_type;
+	uint16_t unknown4;  // always 0xffff (padding?)
 };
 
 struct ipts_pen_dft_window_row {

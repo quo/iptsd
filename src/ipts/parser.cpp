@@ -18,6 +18,7 @@ template <class T> inline const T& Block::read()
 
 void Block::skip(const size_t size)
 {
+	if (size > remaining()) throw std::out_of_range("skip");
 	index += size;
 }
 
@@ -28,15 +29,15 @@ size_t Block::remaining()
 
 Block Block::block(size_t size)
 {
-	if (size > remaining()) throw std::out_of_range("index");
+	if (size > remaining()) throw std::out_of_range("block");
 	size_t start = index;
 	index += size;
 	return Block(data, start, index);
 }
 
-gsl::span<u8> Block::span()
+gsl::span<const u8> Block::span()
 {
-	return gsl::span<u8>(&data[index], end - index);
+	return gsl::span<const u8>(&data[index], end - index);
 }
 
 // Parser:
@@ -44,6 +45,11 @@ gsl::span<u8> Block::span()
 Block Parser::block()
 {
 	return Block(data, 0, data.size());
+}
+
+void Parser::reset()
+{
+	heatmap.data = gsl::span<const u8>();
 }
 
 void Parser::parse(Block &b, bool ignore_truncated)
@@ -64,12 +70,14 @@ void Parser::parse(Block &b, bool ignore_truncated)
 
 void Parser::parse()
 {
+	reset();
 	auto b = block();
 	parse(b, false);
 }
 
 void Parser::parse_loop()
 {
+	reset();
 	auto b = block();
 	while (b.remaining())
 		parse(b, false);
@@ -84,6 +92,7 @@ void Parser::parse_ithc(size_t size)
 		uint32_t size;
 	};
 
+	reset();
 	auto b = block().block(size);
 	while (b.remaining()) {
 		const auto hdr = b.read<struct ithc_api_header>();
@@ -137,6 +146,7 @@ void Parser::parse_singletouch(Block &b)
 
 void Parser::parse_stylus(Block &b)
 {
+	// TODO could merge this into parse_container_reports?
 	while (b.remaining()) {
 		const auto report = b.read<struct ipts_report>();
 		auto data = b.block(report.size);

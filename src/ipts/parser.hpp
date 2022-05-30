@@ -51,7 +51,7 @@ public:
 	u8 z_max = 0;
 	u32 timestamp = 0;
 
-	gsl::span<u8> data;
+	gsl::span<const u8> data;
 };
 
 class Block {
@@ -65,7 +65,7 @@ public:
 	void skip(const size_t size);
 	size_t remaining();
 	Block block(size_t size);
-	gsl::span<u8> span();
+	gsl::span<const u8> span();
 };
 
 class Parser {
@@ -80,6 +80,7 @@ private:
 
 	Block block();
 
+	void reset();
 	void parse(Block&, bool);
 	void parse_payload(Block&);
 	void parse_hid(Block&);
@@ -104,7 +105,7 @@ public:
 	std::function<void(const StylusData &)> on_stylus;
 	std::function<void(const Heatmap &)> on_heatmap;
 
-	Parser(size_t size, bool invert_x, bool invert_y) : data(size), invert_x(invert_x), invert_y(invert_y) {};
+	Parser(size_t size, bool invert_x = false, bool invert_y = false) : data(size), invert_x(invert_x), invert_y(invert_y) {};
 
 	const gsl::span<u8> buffer();
 	void parse();

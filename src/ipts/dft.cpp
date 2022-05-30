@@ -76,7 +76,7 @@ static double dft_interpolate_frequency(const struct ipts_pen_dft_window_row **x
 	int ia = imag[0] - imag[2], ib = 2*imag[1] - imag[0] - imag[2];
 	double d = (ra*rb + ia*ib) / (double)(rb*rb + ib*ib);
 
-	return maxi + std::clamp(d, mind, maxd);
+	return (maxi + std::clamp(d, mind, maxd)) / (n-1);
 }
 
 void Parser::stop_stylus()
@@ -98,7 +98,10 @@ void Parser::process_dft(const struct ipts_pen_dft_window &dft,
 	switch (dft.data_type) {
 
 	case IPTS_DFT_ID_POSITION:
-		if (num_cols && num_rows && dft_x[0]->magnitude > IPTS_DFT_POSITION_MIN_MAG && dft_y[0]->magnitude > IPTS_DFT_POSITION_MIN_MAG) {
+		if (dft.num_rows > 0 && num_cols && num_rows
+			&& dft_x[0]->magnitude > IPTS_DFT_POSITION_MIN_MAG
+			&& dft_y[0]->magnitude > IPTS_DFT_POSITION_MIN_MAG)
+		{
 			stylus_real = dft_x[0]->real[IPTS_DFT_NUM_COMPONENTS/2] + dft_y[0]->real[IPTS_DFT_NUM_COMPONENTS/2];
 			stylus_imag = dft_x[0]->imag[IPTS_DFT_NUM_COMPONENTS/2] + dft_y[0]->imag[IPTS_DFT_NUM_COMPONENTS/2];
 			double x = dft_interpolate_position(dft_x[0]);
@@ -118,12 +121,12 @@ void Parser::process_dft(const struct ipts_pen_dft_window &dft,
 		break;
 
 	case IPTS_DFT_ID_BUTTON:
-		{
+		if (dft.num_rows > 0) {
 			bool rubber;
 			if (dft_x[0]->magnitude > IPTS_DFT_BUTTON_MIN_MAG && dft_y[0]->magnitude > IPTS_DFT_BUTTON_MIN_MAG) {
 				// same phase as position signal = eraser, opposite phase = button
 				int btn = stylus_real * (dft_x[0]->real[IPTS_DFT_NUM_COMPONENTS/2] + dft_y[0]->real[IPTS_DFT_NUM_COMPONENTS/2])
-						+ stylus_imag * (dft_x[0]->imag[IPTS_DFT_NUM_COMPONENTS/2] + dft_y[0]->imag[IPTS_DFT_NUM_COMPONENTS/2]);
+				        + stylus_imag * (dft_x[0]->imag[IPTS_DFT_NUM_COMPONENTS/2] + dft_y[0]->imag[IPTS_DFT_NUM_COMPONENTS/2]);
 				stylus.button = btn < 0;
 				rubber = btn > 0;
 			} else {
@@ -137,10 +140,10 @@ void Parser::process_dft(const struct ipts_pen_dft_window &dft,
 		break;
 
 	case IPTS_DFT_ID_PRESSURE:
-		{
+		if (dft.num_rows >= IPTS_DFT_PRESSURE_ROWS) {
 			double p = dft_interpolate_frequency(dft_x, dft_y, IPTS_DFT_PRESSURE_ROWS);
-			p = (IPTS_DFT_PRESSURE_ROWS - 1 - p) * IPTS_MAX_PRESSURE / (IPTS_DFT_PRESSURE_ROWS - 1);
-			if (p > 1 && !std::isnan(p)) {
+			p = (1 - p) * IPTS_MAX_PRESSURE;
+			if (p > 1) {
 				stylus.contact = true;
 				stylus.pressure = std::min(IPTS_MAX_PRESSURE, (int)p);
 			} else {
