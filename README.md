@@ -19,6 +19,10 @@ outside of the ME and then relayed into the HID / input subsystem of the OS.
 This daemon relies on a kernel driver that can be found here:
 https://github.com/linux-surface/intel-precise-touch
 
+For SP7+/SP8 and other devices using Intel's Touch Host Controller, you will
+instead need the ithc driver:
+https://github.com/quo/ithc-linux
+
 The driver will establish and manage the connection to the IPTS hardware. It
 will also set up an API that can be used by userspace to read the touch data
 from IPTS.
@@ -34,39 +38,15 @@ devices. If you have a device with IPTS and want to test it, feel free to
 open an issue or join ##linux-surface on Freenode IRC and get in touch.
 
 ### Building
-You need to install git, a c compiler, meson, ninja through your
-distributions package manager.
-
-We are using libinih to parse configuration files. You should install it
-if your distribution already packages it. All the major distros have it in
-their repos already.
-
-``` bash
-$ sudo apt install libinih1 libinih-dev
-$ sudo pacman -S libinih
-$ sudo dnf install inih inih-devel
-$ sudo zypper install libinih0 libinih-devel
-```
-
-If libinih is not found on your system, a copy will be downloaded and included
-automatically.
+You need to install g++, meson, and ninja through your distribution's
+package manager.
 
 Use meson and ninja to build iptsd, and then run it with sudo.
 
 ``` bash
-$ git clone https://github.com/linux-surface/iptsd
-$ cd iptsd
 $ meson build
 $ ninja -C build
-$ sudo ./build/iptsd
-```
-
-You need to have the latest UAPI version of the IPTS kernel driver installed.
-All recent linux-surface kernels already include this. To check if you have the
-correct driver installed and loaded, check if a file called `/dev/ipts/0` exists.
-
-``` bash
-$ ls -l /dev/ipts/
+$ sudo build/src/daemon/iptsd
 ```
 
 ### Installing
