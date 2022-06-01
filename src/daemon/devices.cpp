@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <spdlog/spdlog.h>
 
 namespace iptsd::daemon {
 
@@ -98,7 +99,7 @@ TouchDevice::TouchDevice(Config conf) : UinputDevice(), manager(conf)
 DeviceManager::DeviceManager(Config conf) : conf(conf), touch(conf)
 {
 	if (conf.width == 0 || conf.height == 0)
-		throw std::runtime_error("Display size is 0");
+		spdlog::warn("Display size is 0");
 
 	this->create_stylus(0);
 }
