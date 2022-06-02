@@ -35,14 +35,9 @@ if fast_math.enabled() or (fast_math.auto() and optimize)
 	optflags += ['-ffast-math']
 endif
 
-cpu_type = get_option('cpu_type')
-if cpu_type != ''
-	optflags += ['-march=' + cpu_type]
-endif
-
-simd_type = get_option('simd_type')
-if simd_type != ''
-	optflags += ['-m' + simd_type]
+march = get_option('march')
+if march != ''
+	optflags += ['-march=' + march]
 endif
 
 cxxflags = cpp.get_supported_arguments(cxxflags)
@@ -62,8 +57,8 @@ endif
 add_project_arguments('-DSPDLOG_FMT_EXTERNAL', language: 'cpp')
 
 # Dependencies
-fmt = dependency('fmt', fallback: ['fmt', 'fmt_dep'])
-inih = dependency('inih', fallback: ['inih', 'inih_dep'])
+fmt = dependency('fmt', fallback: ['fmt', 'fmt_dep'], default_options: ['default_library=static'])
+inih = dependency('inih', fallback: ['inih', 'inih_dep'], default_options: ['default_library=static'])
 gsl = dependency('Microsoft.GSL', modules: ['Microsoft.GSL::GSL'],
 		 fallback: ['microsoft-gsl', 'microsoft_gsl_dep'])
 spdlog = dependency('spdlog', fallback: ['spdlog', 'spdlog_dep'])

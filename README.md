@@ -44,7 +44,7 @@ package manager.
 Use meson and ninja to build iptsd, and then run it with sudo.
 
 ``` bash
-$ meson build --wrap-mode=forcefallback
+$ meson build --wrap-mode=forcefallback --buildtype=debugoptimized -Dmarch=native
 $ ninja -C build
 $ sudo build/src/daemon/iptsd
 ```

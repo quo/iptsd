@@ -12,6 +12,5 @@ option('debug_tools',
 option('access_checks', type: 'boolean', value: true)
 option('force_access_checks', type: 'boolean', value: false)
 
-option('fast_math', type: 'feature', value: 'auto')
-option('cpu_type', type: 'string', value: 'core-avx2')
-option('simd_type', type: 'string', value: 'avx2')
+option('fast_math', type: 'feature', value: 'disabled')
+option('march', type: 'string', value: '')
