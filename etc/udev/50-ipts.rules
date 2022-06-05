@@ -1,1 +1,2 @@
-KERNEL=="ipts/*", TAG+="systemd"
+KERNEL=="ipts/15", TAG+="systemd", ENV{SYSTEMD_WANTS}+="iptsd.service"
+KERNEL=="ithc", TAG+="systemd", ENV{SYSTEMD_WANTS}+="iptsd.service"

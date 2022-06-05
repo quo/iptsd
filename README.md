@@ -65,5 +65,10 @@ You need to run the steps from "Building" first.
 ```bash
 $ sudo ninja -C build install
 $ sudo systemctl daemon-reload
-$ sudo systemctl enable --now iptsd
+$ sudo systemctl disable iptsd # see below
+$ sudo systemctl start iptsd
 ```
+
+The `systemctl disable` command does not actually disable the service, instead
+it removes an old dependency on `multi-user.target`, which is no longer
+necessary since the service is now triggered by device initialization.
