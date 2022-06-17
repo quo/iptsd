@@ -227,6 +227,8 @@ void Parser::parse_hid_container(Block &b)
 
 	while (root_data.remaining()) {
 		const auto c = root_data.read<struct ipts_hid_container>();
+		// XXX On SP7 we receive 0x74 packets with 4 nul bytes of data, inside a container with an incorrect size. Let's just ignore these.
+		if (root.size == 22 && c.type == 0xff && c.size == 11) return;
 		auto data = root_data.block(c.size - sizeof c);
 		switch (c.type) {
 			case 1:
