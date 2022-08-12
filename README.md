@@ -75,7 +75,8 @@ necessary since the service is now triggered by device initialization.
 
 ---
 
-Workaround on "Failed to set up systemctl service"
+### Workarounds
+"Failed to set up systemctl service"
 https://github.com/quo/iptsd/issues/1#issuecomment-1198511909 ->
 
 ```sudo semanage fcontext -a -t systemd_unit_file_t -s system_u /usr/lib/systemd/system/iptsd.service
@@ -95,4 +96,4 @@ Also on SP7 you have to enable the gen7mt option for the ipts driver:
 
 ```echo options ipts gen7mt | sudo tee /etc/modprobe.d/ipts-gen7mt.conf```
 
-Then repeat the systemctl steps from ### Installing and reboot (or reload ipts).
+Then repeat the systemctl steps from #Installing and reboot (or reload ipts).
