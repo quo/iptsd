@@ -72,3 +72,27 @@ $ sudo systemctl start iptsd
 The `systemctl disable` command does not actually disable the service, instead
 it removes an old dependency on `multi-user.target`, which is no longer
 necessary since the service is now triggered by device initialization.
+
+---
+
+### Workarounds
+"Failed to set up systemctl service"
+https://github.com/quo/iptsd/issues/1#issuecomment-1198511909 ->
+
+```
+sudo semanage fcontext -a -t systemd_unit_file_t -s system_u /usr/lib/systemd/system/iptsd.service
+sudo semanage fcontext -a -t usr_t -s system_u /usr/local/bin/iptsd
+sudo semanage fcontext -a -t usr_t -s system_u /usr/local/bin/iptsd-reset-sensor
+sudo semanage fcontext -a -t usr_t -s system_u /usr/local/bin/ipts-dump
+
+sudo restorecon -vF /usr/lib/systemd/system/iptsd.service
+sudo restorecon -vF /usr/local/bin/iptsd
+sudo restorecon -vF /usr/local/bin/iptsd-reset-sensor
+sudo restorecon -vF /usr/local/bin/ipts-dump
+```
+
+Also on SP7 you have to enable the gen7mt option for the ipts driver:
+
+`echo options ipts gen7mt | sudo tee /etc/modprobe.d/ipts-gen7mt.conf`
+
+Then repeat the systemctl steps from Installing and reboot (or reload ipts).
