@@ -1,10 +1,11 @@
-# :warning: Experimental iptsd fork :warning:
+# Deprecated iptsd fork
 
 This is a fork of the libqzed branch of iptsd, with the following changes:
 - Added support for SP7+ (requires [ithc driver](https://github.com/quo/ithc-linux)).
 - Added support for Surface Pen on SP7/SP7+.
 
-These changes are still experimental. Please report any issues you encounter.
+The changes in this fork have been merged into [upstream iptsd](https://github.com/linux-surface/iptsd).
+Future development will take place there.
 
 ---
 
