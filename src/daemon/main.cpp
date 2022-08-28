@@ -37,42 +37,43 @@ static int main(gsl::span<char *> args)
 	auto const _sigterm = common::signal<SIGTERM>([&](int) { should_exit = true; });
 	auto const _sigint = common::signal<SIGINT>([&](int) { should_exit = true; });
 
-	ipts::Device device {args[1]};
-	Context ctx {device.vendor(), device.product()};
-
-	spdlog::info("Connected to device {:04X}:{:04X}", device.vendor(), device.product());
+	Context ctx {0x045E,0x0C1A};
 
 	ipts::Parser parser {};
 	parser.on_stylus = [&](const auto &data) { iptsd_stylus_input(ctx, data); };
 	parser.on_heatmap = [&](const auto &data) { iptsd_touch_input(ctx, data); };
 	parser.on_dft = [&](const auto &dft, auto &stylus) { iptsd_dft_input(ctx, dft, stylus); };
 
-	// Get the buffer size from the HID descriptor
-	std::size_t buffer_size = device.buffer_size();
-	std::vector<u8> buffer(buffer_size);
+	struct {
+		uint8_t hdr_size;
+		uint8_t reserved[3];
+		uint32_t msg_num;
+		uint32_t size;
+	} hdr;
+	struct {
+		uint32_t type;
+		uint32_t size;
+		uint32_t unused[14];
+		uint8_t buffer[0x10000];
+	} data;
 
-	// Enable multitouch mode
-	device.set_mode(true);
+	int fd = open(args[1], O_RDONLY);
+	if (fd < 0) throw common::cerror("Failed to open file");
 
-	while (!should_exit) {
-		try {
-			ssize_t size = device.read(buffer);
+	for (int i = 0; i < 100; i++) {
+		lseek(fd, 0, 0);
+		while (true) {
+			ssize_t r = read(fd, &hdr, sizeof hdr);
+			if (r != sizeof hdr) break;
+			ssize_t size = read(fd, &data, hdr.size);
+			if (size != hdr.size) throw common::cerror("Failed to read data");
+			if (data.type != 3) continue;
 
-			// Does this report contain touch data?
-			if (!device.is_touch_data(buffer[0]))
-				continue;
-
-			parser.parse(gsl::span<u8>(buffer.data(), size));
-		} catch (std::exception &e) {
-			spdlog::error(e.what());
-			break;
+			parser.parse(gsl::span<u8>(data.buffer, data.size));
 		}
 	}
 
 	spdlog::info("Stopping");
-
-	// Disable multitouch mode
-	device.set_mode(false);
 
 	return EXIT_FAILURE;
 }

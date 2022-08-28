@@ -12,11 +12,13 @@
 #include <linux/uinput.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <spdlog/spdlog.h>
 
 namespace iptsd::daemon {
 
 UinputDevice::UinputDevice()
 {
+	return;
 	int ret = common::open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (ret == -1)
 		throw common::cerror("Failed to open uinput device");
@@ -26,12 +28,14 @@ UinputDevice::UinputDevice()
 
 UinputDevice::~UinputDevice()
 {
+	return;
 	common::ioctl(this->fd, UI_DEV_DESTROY);
 	close(this->fd);
 }
 
 void UinputDevice::set_evbit(i32 ev) const
 {
+	return;
 	int ret = common::ioctl(this->fd, UI_SET_EVBIT, (int)ev);
 	if (ret == -1)
 		throw common::cerror("UI_SET_EVBIT failed");
@@ -39,6 +43,7 @@ void UinputDevice::set_evbit(i32 ev) const
 
 void UinputDevice::set_keybit(i32 key) const
 {
+	return;
 	int ret = common::ioctl(this->fd, UI_SET_KEYBIT, (int)key);
 	if (ret == -1)
 		throw common::cerror("UI_SET_KEYBIT failed");
@@ -46,6 +51,7 @@ void UinputDevice::set_keybit(i32 key) const
 
 void UinputDevice::set_propbit(i32 prop) const
 {
+	return;
 	int ret = common::ioctl(this->fd, UI_SET_PROPBIT, (int)prop);
 	if (ret == -1)
 		throw common::cerror("UI_SET_PROPBIT failed");
@@ -53,6 +59,7 @@ void UinputDevice::set_propbit(i32 prop) const
 
 void UinputDevice::set_absinfo(u16 code, i32 min, i32 max, i32 res) const
 {
+	return;
 	struct uinput_abs_setup abs {};
 
 	abs.code = code;
@@ -76,6 +83,7 @@ void UinputDevice::create() const
 
 	// NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
 	this->name.copy(setup.name, this->name.length(), 0);
+	return;
 
 	int ret = common::ioctl(this->fd, UI_DEV_SETUP, &setup);
 	if (ret == -1)
@@ -88,6 +96,9 @@ void UinputDevice::create() const
 
 void UinputDevice::emit(u16 type, u16 key, i32 value) const
 {
+	spdlog::info("emit {} {} {} {}", name, type, key, value);
+	return;
+
 	struct input_event ie {};
 
 	ie.type = type;
